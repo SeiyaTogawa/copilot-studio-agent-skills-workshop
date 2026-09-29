@@ -1,0 +1,1467 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Copilot Studio で始める Agent Skills 勉強会</title>
+<script>
+  (() => {
+    const param = new URLSearchParams(window.location.search).get("scoutTheme");
+    const theme =
+      param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", theme);
+  })();
+</script>
+<style>
+:root {
+  color-scheme: light;
+  --cp-bg: #f7f4ef;
+  --cp-bg-elevated: #fcfbf8;
+  --cp-surface: #ffffff;
+  --cp-surface-soft: #f5f5f5;
+  --cp-border: #dedede;
+  --cp-border-strong: #919191;
+  --cp-text: #242424;
+  --cp-text-muted: #5c5c5c;
+  --cp-text-soft: #6f6f6f;
+  --cp-accent: #b11f4b;
+  --cp-accent-hover: #9a1a41;
+  --cp-accent-soft: rgba(177, 31, 75, 0.08);
+  --cp-accent-fg: #ffffff;
+  --cp-gen: #d2587a;
+  --cp-ret: #b11f4b;
+  --cp-act: #7d1535;
+  --cp-success: #16a34a;
+  --cp-danger: #dc2626;
+  --cp-warning: #f59e0b;
+  --cp-link: #0078d4;
+  --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.12);
+  --cp-overlay: rgba(255, 255, 255, 0.8);
+  --cp-panel: rgba(255, 255, 255, 0.86);
+  --cp-panel-strong: rgba(255, 255, 255, 0.96);
+  --cp-sheen: rgba(255, 255, 255, 0.55);
+  --cp-highlight: rgba(177, 31, 75, 0.12);
+}
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --cp-bg: #3d3b3a;
+  --cp-bg-elevated: #343231;
+  --cp-surface: #292929;
+  --cp-surface-soft: #2e2e2e;
+  --cp-border: #474747;
+  --cp-border-strong: #5f5f5f;
+  --cp-text: #dedede;
+  --cp-text-muted: #919191;
+  --cp-text-soft: #b0b0b0;
+  --cp-accent: #fd8ea1;
+  --cp-accent-hover: #fb7b91;
+  --cp-accent-soft: rgba(253, 142, 161, 0.14);
+  --cp-accent-fg: #1a1a1a;
+  --cp-gen: #f0a9b9;
+  --cp-ret: #fd8ea1;
+  --cp-act: #c96d80;
+  --cp-success: #4ade80;
+  --cp-danger: #f87171;
+  --cp-warning: #fbbf24;
+  --cp-link: #4da6ff;
+  --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+  --cp-overlay: rgba(41, 41, 41, 0.88);
+  --cp-panel: rgba(41, 41, 41, 0.72);
+  --cp-panel-strong: rgba(41, 41, 41, 0.96);
+  --cp-sheen: rgba(255, 255, 255, 0.04);
+  --cp-highlight: rgba(253, 142, 161, 0.12);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--cp-bg);
+  color: var(--cp-text);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+code, pre, .mono { font-family: Consolas, "Courier New", Courier, monospace; }
+
+/* ---------- Stage / slides ---------- */
+.deck { position: fixed; inset: 0; }
+.slide {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; justify-content: center;
+  padding: clamp(3.4rem, 6vh, 5rem) clamp(2rem, 6vw, 7rem) clamp(3.6rem, 7vh, 5rem);
+  opacity: 0; visibility: hidden;
+  transform: translateY(18px) scale(0.99);
+  transition: opacity .45s ease, transform .45s ease, visibility .45s;
+  overflow-y: auto;
+}
+.slide.active { opacity: 1; visibility: visible; transform: none; }
+.slide-inner { width: 100%; max-width: 1200px; margin: 0 auto; }
+
+.slide.active .reveal { animation: rise .5s ease both; }
+.slide.active .reveal:nth-child(2) { animation-delay: .06s; }
+.slide.active .reveal:nth-child(3) { animation-delay: .12s; }
+.slide.active .reveal:nth-child(4) { animation-delay: .18s; }
+.slide.active .reveal:nth-child(5) { animation-delay: .24s; }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+/* ---------- Typography ---------- */
+.kicker {
+  display: inline-flex; align-items: center; gap: .5rem;
+  font-size: clamp(.7rem, 1.1vw, .85rem);
+  font-weight: 600; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--cp-accent); background: var(--cp-accent-soft);
+  border: 1px solid var(--cp-accent);
+  padding: .35rem .8rem; border-radius: 999px;
+  margin-bottom: 1.1rem; white-space: nowrap;
+}
+.kicker .num { opacity: .7; }
+h1.title { font-size: clamp(2.2rem, 5.6vw, 4.2rem); line-height: 1.12; letter-spacing: -.02em; }
+h1 .accent, h2 .accent { color: var(--cp-accent); }
+h2 { font-size: clamp(1.6rem, 3.4vw, 2.6rem); line-height: 1.15; letter-spacing: -.015em; margin-bottom: 1.1rem; }
+.lead { font-size: clamp(1rem, 1.6vw, 1.22rem); color: var(--cp-text-muted); line-height: 1.6; }
+.sub { color: var(--cp-text-soft); font-size: clamp(.9rem, 1.4vw, 1.05rem); line-height: 1.55; }
+.hl { color: var(--cp-accent); font-weight: 600; }
+.mt { margin-top: 1.1rem; }
+.mb { margin-bottom: 1.1rem; }
+
+/* ---------- Cards / grid ---------- */
+.grid { display: grid; gap: clamp(.8rem, 1.5vw, 1.2rem); }
+.grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+.grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+.grid.cols-5 { grid-template-columns: repeat(5, 1fr); }
+
+.card {
+  background: var(--cp-surface); border: 1px solid var(--cp-border);
+  border-radius: 16px; padding: clamp(1rem, 1.8vw, 1.4rem);
+}
+.card h3 { font-size: clamp(1rem, 1.5vw, 1.2rem); margin-bottom: .5rem; display: flex; align-items: center; gap: .55rem; }
+.card p { color: var(--cp-text-muted); font-size: clamp(.88rem, 1.3vw, 1rem); line-height: 1.55; }
+.card.soft { background: var(--cp-surface-soft); }
+.card.accent-edge { border-left: 4px solid var(--cp-accent); }
+.badge {
+  display: inline-grid; place-items: center; min-width: 1.9rem; height: 1.9rem; padding: 0 .4rem;
+  border-radius: 8px; background: var(--cp-accent); color: var(--cp-accent-fg);
+  font-weight: 700; font-size: .92rem; flex: none;
+}
+
+ul.clean { list-style: none; display: flex; flex-direction: column; gap: .75rem; }
+ul.clean li { position: relative; padding-left: 1.2rem; font-size: clamp(.92rem, 1.4vw, 1.08rem); color: var(--cp-text); line-height: 1.5; }
+ul.clean li::before { content: ""; position: absolute; left: 0; top: .52rem; width: .55rem; height: .55rem; border-radius: 3px; background: var(--cp-accent); }
+ul.clean li.no::before { background: var(--cp-danger); }
+ul.clean li.yes::before { background: var(--cp-success); }
+ul.clean li small { display: block; color: var(--cp-text-soft); font-size: .85em; margin-top: .15rem; line-height: 1.45; }
+ul.clean.tight { gap: .5rem; }
+
+/* ---------- Table ---------- */
+.tbl { width: 100%; border-collapse: separate; border-spacing: 0; font-size: clamp(.84rem, 1.3vw, 1rem); border-radius: 14px; overflow: hidden; border: 1px solid var(--cp-border); background: var(--cp-surface); }
+.tbl th, .tbl td { text-align: left; padding: .62rem .95rem; border-bottom: 1px solid var(--cp-border); vertical-align: top; line-height: 1.45; }
+.tbl thead th { background: var(--cp-surface-soft); font-weight: 700; white-space: nowrap; }
+.tbl tbody tr:last-child td { border-bottom: none; }
+.tbl td.k { font-weight: 700; color: var(--cp-accent); white-space: nowrap; }
+.tbl td.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--cp-text-muted); }
+.tbl td.muted, .tbl .muted { color: var(--cp-text-muted); }
+.tbl tr.focus td { background: var(--cp-accent-soft); }
+.tbl tr.break td { background: var(--cp-surface-soft); color: var(--cp-text-soft); }
+.tbl small { display: block; color: var(--cp-text-soft); font-size: .84em; line-height: 1.4; margin-top: .1rem; }
+.tbl.compact th, .tbl.compact td { padding: .48rem .85rem; }
+
+/* ---------- Chips ---------- */
+.chips { display: flex; flex-wrap: wrap; gap: .5rem; }
+.chip {
+  display: inline-flex; align-items: center; gap: .45rem;
+  background: var(--cp-surface); border: 1px solid var(--cp-border);
+  border-radius: 999px; padding: .45rem .95rem; font-weight: 600;
+  font-size: clamp(.82rem, 1.2vw, .98rem); white-space: nowrap;
+}
+.chip .dot { width: .55rem; height: .55rem; border-radius: 50%; background: var(--cp-border-strong); flex: none; }
+.chip.on { border-color: var(--cp-accent); background: var(--cp-accent-soft); }
+.chip.on .dot { background: var(--cp-accent); }
+
+/* ---------- HUD ---------- */
+.topbar {
+  position: fixed; top: 0; left: 0; right: 0; height: 52px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 clamp(1rem, 3vw, 2.2rem);
+  font-size: .82rem; color: var(--cp-text-soft);
+  pointer-events: none; z-index: 20;
+}
+.brand { display: flex; align-items: center; gap: .55rem; font-weight: 700; color: var(--cp-text); white-space: nowrap; }
+.brand .mark { width: .85rem; height: .85rem; border-radius: 3px; background: var(--cp-accent); flex: none; }
+.section-name { color: var(--cp-text-muted); font-weight: 500; white-space: nowrap; }
+.progress { position: fixed; top: 0; left: 0; height: 3px; background: var(--cp-accent); width: 0; z-index: 30; transition: width .4s ease; }
+.hud { position: fixed; bottom: clamp(.8rem, 2.2vh, 1.4rem); right: clamp(1rem, 3vw, 2rem); display: flex; align-items: center; gap: .6rem; z-index: 25; }
+.counter { font-variant-numeric: tabular-nums; font-weight: 700; font-size: .95rem; color: var(--cp-text-muted); }
+.counter b { color: var(--cp-accent); }
+.btn {
+  -webkit-appearance: none; appearance: none; cursor: pointer;
+  width: 2.5rem; height: 2.5rem; border-radius: 999px;
+  border: 1px solid var(--cp-border); background: var(--cp-panel-strong);
+  color: var(--cp-text); font-size: 1.2rem; line-height: 1;
+  display: grid; place-items: center;
+  transition: border-color .15s, color .15s, transform .1s;
+}
+.btn:hover { border-color: var(--cp-accent); color: var(--cp-accent); }
+.btn:active { transform: scale(.92); }
+.hint { position: fixed; bottom: clamp(.8rem, 2.2vh, 1.4rem); left: clamp(1rem, 3vw, 2rem); font-size: .76rem; color: var(--cp-text-soft); z-index: 25; user-select: none; }
+.hint kbd { font-family: inherit; background: var(--cp-surface-soft); border: 1px solid var(--cp-border); border-radius: 6px; padding: .1rem .4rem; font-size: .72rem; color: var(--cp-text-muted); }
+.dots { position: fixed; bottom: clamp(1rem, 2.6vh, 1.6rem); left: 50%; transform: translateX(-50%); display: flex; gap: .35rem; z-index: 25; }
+.dot-nav { width: .45rem; height: .45rem; border-radius: 50%; border: none; padding: 0; cursor: pointer; background: var(--cp-border-strong); opacity: .55; transition: all .2s; }
+.dot-nav:hover { opacity: 1; }
+.dot-nav.on { background: var(--cp-accent); opacity: 1; width: 1.3rem; border-radius: 999px; }
+
+a { color: var(--cp-link); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(1.1rem, 2.6vw, 2.2rem); align-items: start; }
+.two.img-l { grid-template-columns: 1.15fr 1fr; }
+.two.img-r { grid-template-columns: 1fr 1.15fr; }
+.two.center { align-items: center; }
+.stack { display: flex; flex-direction: column; gap: 1rem; }
+
+/* ---------- Cover meta ---------- */
+.cs-meta { display: flex; flex-wrap: wrap; gap: .6rem 1.6rem; align-items: center; }
+.cs-meta .item { display: flex; align-items: baseline; gap: .5rem; white-space: nowrap; }
+.cs-meta .lab { font-size: .72rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--cp-accent); }
+.cs-meta .val { font-size: clamp(.95rem, 1.5vw, 1.12rem); color: var(--cp-text); font-weight: 600; }
+.cs-rule { height: 1px; background: var(--cp-border); margin: 1.5rem 0; }
+
+/* ---------- Part cards ---------- */
+.cs-part {
+  background: var(--cp-surface); border: 1px solid var(--cp-border);
+  border-top: 4px solid var(--shade, var(--cp-accent));
+  border-radius: 16px; padding: clamp(1rem, 1.8vw, 1.4rem);
+  display: flex; flex-direction: column; gap: .55rem;
+}
+.cs-part .en { font-size: .7rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--shade, var(--cp-accent)); white-space: nowrap; }
+.cs-part .ttl { font-size: clamp(1.02rem, 1.65vw, 1.3rem); font-weight: 700; line-height: 1.25; color: var(--cp-text); }
+.cs-part .desc { font-size: clamp(.86rem, 1.25vw, .98rem); color: var(--cp-text-muted); line-height: 1.55; }
+.cs-part .tags { margin-top: auto; display: flex; flex-wrap: wrap; gap: .35rem; padding-top: .5rem; }
+.tag {
+  display: inline-block; font-size: .74rem; font-weight: 600; white-space: nowrap;
+  color: var(--cp-text-muted); background: var(--cp-surface-soft);
+  border: 1px solid var(--cp-border); border-radius: 999px; padding: .2rem .6rem;
+}
+.tag.warn { color: var(--cp-warning); border-color: var(--cp-warning); background: transparent; }
+.tag.ok { color: var(--cp-success); border-color: var(--cp-success); background: transparent; }
+
+/* ---------- Label/value rows ---------- */
+.cs-row { display: grid; grid-template-columns: 6.5rem 1fr; gap: .9rem; align-items: start; padding: .7rem 0; border-bottom: 1px solid var(--cp-border); }
+.cs-row:last-child { border-bottom: none; }
+.cs-row.num { grid-template-columns: 2.4rem 1fr; align-items: center; padding: .5rem 0; }
+.cs-row .k { font-weight: 700; color: var(--cp-accent); font-size: clamp(.88rem, 1.3vw, 1rem); line-height: 1.45; }
+.cs-row .v { color: var(--cp-text-muted); font-size: clamp(.88rem, 1.3vw, 1rem); line-height: 1.5; }
+.cs-row .v b { color: var(--cp-text); }
+.cs-row .v small { display: block; color: var(--cp-text-soft); font-size: .85em; margin-top: .1rem; line-height: 1.4; }
+
+/* ---------- Contrast panels ---------- */
+.cs-vs { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(.9rem, 2vw, 1.4rem); }
+.cs-panel { border-radius: 16px; padding: clamp(1rem, 1.8vw, 1.4rem); border: 1px solid var(--cp-border); background: var(--cp-surface); display: flex; flex-direction: column; gap: .8rem; }
+.cs-panel.stop { background: var(--cp-surface-soft); }
+.cs-panel.go { border-left: 4px solid var(--cp-accent); }
+.cs-panel h3 { font-size: clamp(1rem, 1.6vw, 1.22rem); display: flex; align-items: center; gap: .5rem; }
+
+/* ---------- Steps ---------- */
+.steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: .65rem; align-items: stretch; }
+.step {
+  background: var(--cp-surface); border: 1px solid var(--cp-border); border-radius: 14px;
+  padding: .95rem 1rem; display: flex; flex-direction: column; gap: .4rem;
+  border-top: 4px solid var(--shade, var(--cp-accent));
+}
+.step .no { font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--shade, var(--cp-accent)); }
+.step .ttl { font-weight: 700; font-size: clamp(.98rem, 1.5vw, 1.15rem); color: var(--cp-text); line-height: 1.3; }
+.step .q { font-size: clamp(.8rem, 1.2vw, .93rem); color: var(--cp-text-muted); line-height: 1.5; }
+.step .time { margin-top: auto; padding-top: .5rem; border-top: 1px dashed var(--cp-border); font-size: .82rem; font-weight: 700; color: var(--cp-text-soft); }
+
+/* ---------- Layers (progressive disclosure) ---------- */
+.layers { display: flex; flex-direction: column; gap: .7rem; }
+.layer {
+  display: grid; grid-template-columns: 3rem 1.1fr 1.4fr 1.2fr; gap: 1rem; align-items: center;
+  background: var(--cp-surface); border: 1px solid var(--cp-border); border-radius: 14px;
+  padding: .9rem 1.1rem; border-left: 6px solid var(--shade, var(--cp-accent));
+}
+.layer .lv { font-size: 1.6rem; font-weight: 800; color: var(--shade, var(--cp-accent)); text-align: center; }
+.layer .nm { font-weight: 700; font-size: clamp(1rem, 1.5vw, 1.15rem); }
+.layer .nm small { display: block; font-weight: 500; color: var(--cp-text-soft); font-size: .8em; margin-top: .15rem; }
+.layer .wh { color: var(--cp-text-muted); font-size: clamp(.86rem, 1.25vw, .98rem); line-height: 1.45; }
+.layer .sz { justify-self: start; }
+.meter { display: flex; align-items: center; gap: .6rem; font-size: .85rem; font-weight: 700; color: var(--cp-text-muted); white-space: nowrap; }
+.meter .bar { height: .6rem; border-radius: 999px; background: var(--shade, var(--cp-accent)); }
+
+/* ---------- Code / tree ---------- */
+pre.code, pre.tree {
+  background: var(--cp-surface-soft); border: 1px solid var(--cp-border); border-radius: 12px;
+  padding: .95rem 1.1rem; font-size: clamp(.76rem, 1.1vw, .9rem); line-height: 1.6;
+  color: var(--cp-text); overflow-x: auto; white-space: pre;
+}
+pre.code.wrap { white-space: pre-wrap; word-break: break-word; }
+pre .fm { color: var(--cp-accent); font-weight: 700; }
+pre .cm { color: var(--cp-text-soft); }
+pre .b { font-weight: 700; }
+.code-label { font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--cp-text-soft); margin-bottom: .4rem; }
+code.inline { background: var(--cp-surface-soft); border: 1px solid var(--cp-border); border-radius: 6px; padding: .05rem .38rem; font-size: .88em; }
+
+/* ---------- Callout ---------- */
+.callout {
+  display: flex; gap: .8rem; align-items: flex-start;
+  background: var(--cp-accent-soft); border: 1px solid var(--cp-accent); border-radius: 12px;
+  padding: .8rem 1.05rem; font-size: clamp(.88rem, 1.3vw, 1rem); color: var(--cp-text); line-height: 1.55;
+}
+.callout.warn { background: transparent; border-color: var(--cp-warning); }
+.callout .ic { flex: none; font-size: 1.1rem; line-height: 1.4; }
+
+/* ---------- Screenshots ---------- */
+figure.shot { display: flex; flex-direction: column; gap: .5rem; margin: 0; }
+figure.shot img {
+  display: block; max-width: 100%; max-height: 58vh; width: auto; height: auto; margin: 0 auto;
+  border: 1px solid var(--cp-border); border-radius: 12px; box-shadow: var(--cp-shadow);
+  cursor: zoom-in; background: var(--cp-surface);
+}
+figure.shot.sm img { max-height: 46vh; }
+figure.shot.xs img { max-height: 40vh; }
+figure.shot figcaption { font-size: clamp(.76rem, 1.1vw, .88rem); color: var(--cp-text-soft); text-align: center; line-height: 1.45; }
+.lightbox {
+  position: fixed; inset: 0; z-index: 100; display: none;
+  align-items: center; justify-content: center; padding: 2.5vh 2.5vw;
+  background: var(--cp-overlay); backdrop-filter: blur(4px); cursor: zoom-out;
+}
+.lightbox.open { display: flex; }
+.lightbox img { max-width: 100%; max-height: 100%; border-radius: 12px; border: 1px solid var(--cp-border); box-shadow: var(--cp-shadow); background: var(--cp-surface); }
+
+/* ---------- Break / divider ---------- */
+.big-word { font-size: clamp(3.5rem, 11vw, 8rem); font-weight: 800; line-height: .95; color: var(--cp-accent); letter-spacing: -.03em; }
+
+@media (max-width: 900px) {
+  .grid.cols-2, .grid.cols-3, .grid.cols-4, .grid.cols-5, .steps, .cs-vs { grid-template-columns: 1fr; }
+  .two, .two.img-l, .two.img-r { grid-template-columns: 1fr; }
+  .layer { grid-template-columns: 2.4rem 1fr; }
+  .section-name { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<div class="topbar">
+  <span class="brand"><span class="mark"></span>Agent Skills 勉強会</span>
+  <span class="section-name" id="sectionName"></span>
+</div>
+
+<div class="deck" id="deck">
+
+<!-- ===== 1. Cover ===== -->
+<section class="slide" data-section="">
+  <div class="slide-inner">
+    <span class="kicker reveal">Study Session · Copilot Studio</span>
+    <h1 class="title reveal">Copilot Studio で始める<br><span class="accent">Agent Skills</span></h1>
+    <p class="lead reveal mt">指示・スクリプト・リソースをパッケージ化し、エージェントに専門的な能力を与える仕組みを、ハンズオンを通じて理解</p>
+    <div class="cs-rule reveal"></div>
+    <div class="cs-meta reveal">
+      <div class="item"><span class="lab">Format</span><span class="val">講義＋ハンズオン</span></div>
+      <div class="item"><span class="lab">Time</span><span class="val">180分</span></div>
+      <div class="item"><span class="lab">Speaker</span><span class="val">Seiya Togawa</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 2. Agenda ===== -->
+<section class="slide" data-section="アジェンダ">
+  <div class="slide-inner">
+    <span class="kicker reveal">Agenda</span>
+    <h2 class="reveal">本日の<span class="accent">流れ</span></h2>
+    <table class="tbl compact reveal">
+      <thead><tr><th>#</th><th>パート</th><th>内容</th><th>時間</th></tr></thead>
+      <tbody>
+        <tr><td class="k">0</td><td>はじめに</td><td class="muted">本日のゴール</td><td class="num">5分</td></tr>
+        <tr><td class="k">1</td><td>Agent Skills とは</td><td class="muted">定義・フォルダ構成・段階的な読み込み</td><td class="num">15分</td></tr>
+        <tr><td class="k">2</td><td>Copilot Studio での位置づけ</td><td class="muted">指示／ナレッジ／ツールとの違い、呼び出しの仕組み</td><td class="num">10分</td></tr>
+        <tr class="focus"><td class="k">3</td><td><b>追加方法と管理</b></td><td class="muted">AI で生成（デモ）、Step 0〜3：エージェント作成・最初から作成・.md アップロード・.zip 置換</td><td class="num">45分</td></tr>
+        <tr><td class="k">4</td><td>書き方と注意点</td><td class="muted">フロントマター、description、トラブル対応</td><td class="num">15分</td></tr>
+        <tr class="break"><td></td><td>休憩</td><td></td><td class="num">10分</td></tr>
+        <tr class="focus"><td class="k">5</td><td><b>演習</b></td><td class="muted">Step 4〜5：作成したスキルの動作確認と振り返り</td><td class="num">20分</td></tr>
+        <tr><td class="k">6</td><td>公開スキルの活用</td><td class="muted">公開リポジトリと取り込み前の確認事項</td><td class="num">10分</td></tr>
+        <tr class="focus"><td class="k">7</td><td><b>自分たちでスキルを作成</b></td><td class="muted">Step 6：業務の選定・設計・作成・テスト・共有</td><td class="num">35分</td></tr>
+        <tr><td class="k">8</td><td>まとめ・Q&amp;A</td><td class="muted"></td><td class="num">15分</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ===== 3. Goals ===== -->
+<section class="slide" data-section="0 · はじめに">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">00</span> Introduction</span>
+    <h2 class="reveal">本日の<span class="accent">ゴール</span></h2>
+    <div class="grid cols-3 reveal">
+      <div class="card accent-edge"><h3><span class="badge">1</span>仕組みの理解</h3><p>Skills の概要と、指示・ナレッジ・ツールとの違いの把握</p></div>
+      <div class="card accent-edge"><h3><span class="badge">2</span>スキルを自分で作成</h3><p>「最初から作成」「.md」「.zip」でのスキル追加と、置換による更新</p></div>
+      <div class="card accent-edge"><h3><span class="badge">3</span>業務に適用</h3><p>自社の業務を 1 つ選び、スキルとして設計・作成</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 4. What are Agent Skills ===== -->
+<section class="slide" data-section="1 · Agent Skills とは">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">01</span> What are Agent Skills</span>
+    <h2 class="reveal">Agent Skills は<br>エージェントに専門的な能力を与える<span class="accent">「パッケージ」</span></h2>
+    <div class="two reveal">
+      <div class="stack">
+        <p class="lead">指示・スクリプト・リソースを 1 つにまとめた、移植可能なパッケージ。エージェントは <span class="hl">必要なときにのみ</span> 読み込み、特定のタスクを定められた手順で実行。</p>
+        <ul class="clean">
+          <li>本体は <code class="inline">SKILL.md</code>（名前・説明・手順）<small>必要に応じて参照資料やテンプレートを同じフォルダに配置</small></li>
+          <li>Anthropic が開発し、オープン標準として公開<small>仕様は agentskills.io で公開</small></li>
+          <li>同じ SKILL.md を複数のエージェント製品で再利用可能</li>
+        </ul>
+      </div>
+      <div class="card soft">
+        <h3>主な対応製品</h3>
+        <div class="chips mt">
+          <span class="chip on"><span class="dot"></span>Copilot Studio</span>
+          <span class="chip"><span class="dot"></span>GitHub Copilot</span>
+          <span class="chip"><span class="dot"></span>VS Code</span>
+          <span class="chip"><span class="dot"></span>Claude Code</span>
+          <span class="chip"><span class="dot"></span>OpenAI Codex</span>
+          <span class="chip"><span class="dot"></span>Cursor</span>
+          <span class="chip"><span class="dot"></span>Gemini CLI</span>
+        </div>
+        <p class="sub mt">agentskills.io のクライアント一覧より抜粋。Copilot Studio は Microsoft Learn に「オープン仕様に準拠」と記載。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 5. Structure ===== -->
+<section class="slide" data-section="1 · Agent Skills とは">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">01</span> Anatomy</span>
+    <h2 class="reveal">スキルは<span class="accent"> 1 つのフォルダ</span>で構成</h2>
+    <div class="two reveal">
+      <div>
+        <div class="code-label">フォルダ構成</div>
+<pre class="tree"><span class="b">expense-policy-check/</span>
+├── <span class="fm">SKILL.md</span>        <span class="cm">← 必須：名前・説明・手順</span>
+├── references/     <span class="cm">← 任意：規程・仕様などの参照資料</span>
+│   └── expense-policy.md
+├── assets/         <span class="cm">← 任意：テンプレート・画像・PDF など</span>
+│   ├── result-template.md
+│   └── expense-policy-original.pdf
+└── scripts/        <span class="cm">← 任意：実行コード（対応は製品次第）</span></pre>
+        <div class="cs-row mt"><div class="k">フロント<br>マター</div><div class="v"><b>いつ使うか</b>。常に読み込まれ、スキル選択の判断材料として使用</div></div>
+        <div class="cs-row"><div class="k">本文</div><div class="v"><b>どう実行するか</b>。スキルの選択時に読み込み</div></div>
+      </div>
+      <div>
+        <div class="code-label">SKILL.md（抜粋）</div>
+<pre class="code"><span class="fm">---
+name: expense-policy-check
+description: "経費精算の申請内容が社内の
+  経費精算規程に沿っているかを判定し、
+  OK/要確認/NGと根拠を表で返す。
+  「この経費は精算できる？」などを
+  尋ねられたときは…使う。"
+---</span>
+
+# 経費精算規程チェック
+
+## 手順
+1. 明細を抜き出す
+2. references/expense-policy.md で
+   該当する条文を特定する
+3. OK / 要確認 / NG を判定する
+4. assets/result-template.md の形式で出力
+5. NG・要確認なら assets/ の原本 PDF を添付</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 6. Progressive disclosure ===== -->
+<section class="slide" data-section="1 · Agent Skills とは">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">01</span> Progressive Disclosure</span>
+    <h2 class="reveal">必要な情報のみを<span class="accent">段階的に読み込み</span></h2>
+    <div class="layers reveal">
+      <div class="layer" style="--shade: var(--cp-gen)">
+        <div class="lv">1</div>
+        <div class="nm">メタデータ<small>name ＋ description</small></div>
+        <div class="wh">起動時に <b>全スキル分</b> を読み込み、使用するスキルの判断に使用</div>
+        <div class="sz meter"><span class="bar" style="width:2.2rem"></span>約100 tokens / スキル</div>
+      </div>
+      <div class="layer" style="--shade: var(--cp-ret)">
+        <div class="lv">2</div>
+        <div class="nm">本文<small>SKILL.md の手順</small></div>
+        <div class="wh">そのスキルが <b>選択されたとき</b> に読み込み</div>
+        <div class="sz meter"><span class="bar" style="width:6rem"></span>5,000 tokens 未満 推奨</div>
+      </div>
+      <div class="layer" style="--shade: var(--cp-act)">
+        <div class="lv">3</div>
+        <div class="nm">リソース<small>references / assets / scripts</small></div>
+        <div class="wh">手順の中で <b>必要になったときのみ</b> 読み込み</div>
+        <div class="sz meter"><span class="bar" style="width:9rem"></span>必要な分のみ</div>
+      </div>
+    </div>
+    <div class="callout mt reveal">
+      <span class="ic">💡</span>
+      <div>スキルを多数追加しても、常に読み込まれるのは <b>名前と説明のみ</b>。そのため、すべてを指示に記述する方式よりも拡張が容易。SKILL.md は <b>500 行以内</b> が目安で、長い資料は references/ に分割。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 7. Why skills ===== -->
+<section class="slide" data-section="1 · Agent Skills とは">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">01</span> Why Skills</span>
+    <h2 class="reveal"><span class="accent">スキルに分ける</span>メリット</h2>
+    <div class="grid cols-4 reveal">
+      <div class="cs-part"><span class="en">Reusability</span><span class="ttl">再利用</span><span class="desc">一度作成した手順を、複数のエージェントで再利用</span></div>
+      <div class="cs-part"><span class="en">Modularity</span><span class="ttl">モジュール化</span><span class="desc">業務ごとに分割し、個別に更新・テスト</span></div>
+      <div class="cs-part"><span class="en">Shareability</span><span class="ttl">共有</span><span class="desc">ファイル単位で配布・レビュー・バージョン管理</span></div>
+      <div class="cs-part"><span class="en">Clarity</span><span class="ttl">明確さ</span><span class="desc">「いつ・何を・どう実行するか」を 1 か所に集約</span></div>
+    </div>
+    <p class="sub reveal" style="margin-top:.5rem">4項目は Microsoft Learn「スキルを使用する理由」より。</p>
+    <div class="cs-vs mt reveal">
+      <div class="cs-panel stop">
+        <h3>指示にすべて記述する場合</h3>
+        <ul class="clean tight">
+          <li class="no">指示が長大化し、無関係な業務の手順も毎回読み込み対象に</li>
+          <li class="no">1 か所の修正が、他の業務の回答にも影響</li>
+          <li class="no">変更履歴（誰が・いつ・何を）の追跡が困難</li>
+        </ul>
+      </div>
+      <div class="cs-panel go">
+        <h3>スキルに分ける場合</h3>
+        <ul class="clean tight">
+          <li class="yes">指示には人格と全体方針のみを記述</li>
+          <li class="yes">業務手順はスキルに記述し、必要なときのみ読み込み</li>
+          <li class="yes">ファイル単位で差し替え・共有が可能</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 8. Prerequisite ===== -->
+<section class="slide" data-section="2 · Copilot Studio での位置づけ">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">02</span> Prerequisites</span>
+    <h2 class="reveal">Skills は<span class="accent"> GitHub Copilot エージェント</span>をはじめ<br>様々なツールで利用可能</h2>
+    <div class="two img-r center reveal">
+      <div class="stack">
+        <ul class="clean">
+          <li>ホームの「<b>エージェント</b>」（GitHub Copilot のタグ付き）から作成したエージェントで利用可能</li>
+          <li class="no">従来型（標準ハーネス・トピック中心）のエージェントでは利用不可</li>
+          <li>利用・作成・テスト・評価で <b>Copilot クレジット</b> を消費<small>事前に管理者による環境へのクレジット割り当てが必要</small></li>
+        </ul>
+      </div>
+      <figure class="shot">
+        <img src="img/01-home.png" alt="Copilot Studio ホームの作成カード" />
+        <figcaption>ホーム画面：「エージェント」カードに GitHub Copilot とクレジットのタグ</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 8a. Agent Builder ===== -->
+<section class="slide" data-section="2 · Copilot Studio での位置づけ">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">02</span> Agent Builder</span>
+    <h2 class="reveal">Agent Builder でも<span class="accent">スキルが使用可能</span>に</h2>
+    <div class="two img-r center reveal">
+      <div class="stack">
+        <ul class="clean">
+          <li>Microsoft 365 Copilot の <b>Agent Builder</b> の「構成」画面に「<b>スキル</b>」欄を追加</li>
+          <li>「指示」と「ナレッジ」の間に配置し、「<b>追加</b>」からスキルを登録</li>
+          <li>Agent Skills はオープンな仕様のため、本日学ぶ <b>SKILL.md の書き方</b> は他のツールでも応用可能</li>
+        </ul>
+        <p class="sub">プレビューのため、画面や仕様は今後変更の可能性あり。</p>
+      </div>
+      <figure class="shot">
+        <img src="img/13-agent-builder-skills.png" alt="Agent Builder の構成画面のスキル欄" />
+        <figcaption>Agent Builder の構成画面：「スキル」欄</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 9. Comparison ===== -->
+<section class="slide" data-section="2 · Copilot Studio での位置づけ">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">02</span> Skills vs Others</span>
+    <h2 class="reveal">指示・ナレッジ・ツールとの<span class="accent">違い</span></h2>
+    <table class="tbl reveal">
+      <thead><tr><th>要素</th><th>役割</th><th>設定する場所</th><th>イメージ</th></tr></thead>
+      <tbody>
+        <tr><td class="k">指示</td><td>エージェント全体の振る舞い・人格</td><td class="muted">エージェントの指示（ID 設定）</td><td class="muted">社員としての心得</td></tr>
+        <tr><td class="k">ナレッジ</td><td>エージェントが参照するデータ</td><td class="muted">ナレッジ ソース</td><td class="muted">社内の資料棚</td></tr>
+        <tr><td class="k">ツール</td><td>外部サービスを使った操作</td><td class="muted">コネクタ／API／MCP</td><td class="muted">電話・業務システム</td></tr>
+        <tr class="focus"><td class="k">スキル</td><td><b>特定のタスクを再利用可能な形で実行する能力</b></td><td class="muted">Markdown のスキル ファイル／パッケージ</td><td><b>業務マニュアル（手順書）</b></td></tr>
+      </tbody>
+    </table>
+    <div class="callout mt reveal">
+      <span class="ic">🔗</span>
+      <div>スキルは <b>ツールやナレッジと組み合わせて使用可能</b>。「このツールをこの順番で使う」「この資料を根拠にする」といった使い方を、手順としてスキルに記述可能。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 10. Invocation ===== -->
+<section class="slide" data-section="2 · Copilot Studio での位置づけ">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">02</span> How Skills Are Invoked</span>
+    <h2 class="reveal">スキルの呼び出しは<span class="accent"> description </span>で判断</h2>
+    <p class="lead reveal">オーケストレーターがユーザーのメッセージと各スキルの description を照合し、使用するスキルを選択。</p>
+    <div class="grid cols-2 mt reveal">
+      <figure class="shot sm">
+        <img src="img/11-skill-trace-expanded.png" alt="Used skill の展開表示" />
+        <figcaption>経費の相談 → <b>Used skill: expense-policy-check</b>（入力 <code class="inline">skill: expense-policy-check</code>）</figcaption>
+      </figure>
+      <figure class="shot sm">
+        <img src="img/12-no-trigger.png" alt="スキルが呼ばれない例" />
+        <figcaption>会議室の予約 → 該当するスキルなしと判断し、<b>スキルの呼び出しなし</b></figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 11. Three ways ===== -->
+<section class="slide" data-section="3 · 追加方法と管理">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">03</span> Add a Skill</span>
+    <h2 class="reveal">スキルの追加方法は<span class="accent"> 3 種類</span>（演習では 2 種類を使用）</h2>
+    <div class="grid cols-3 reveal">
+      <div class="cs-part" style="--shade: var(--cp-gen)">
+        <span class="en">Generate with AI</span>
+        <span class="ttl">AI で生成</span>
+        <span class="desc">目的を説明 → 質問に回答 → 生成されたスキルを確認してエージェントに追加。</span>
+        <div class="tags"><span class="tag">講師デモ</span><span class="tag warn">環境により非表示</span></div>
+      </div>
+      <div class="cs-part" style="--shade: var(--cp-ret)">
+        <span class="en">Create from blank</span>
+        <span class="ttl">最初から作成</span>
+        <span class="desc">名前・説明・指示を画面で入力。SKILL.md 1 ファイルに相当。</span>
+        <div class="tags"><span class="tag">画面で編集可能</span><span class="tag">Step 1 で作成</span></div>
+      </div>
+      <div class="cs-part" style="--shade: var(--cp-act)">
+        <span class="en">Upload .md / .zip</span>
+        <span class="ttl">アップロード</span>
+        <span class="desc">手元で作成したスキルを取り込み。zip では参照資料やテンプレートも同梱可能。</span>
+        <div class="tags"><span class="tag">Git での管理が容易</span><span class="tag">Step 2・3 で作成</span></div>
+      </div>
+    </div>
+    <div class="callout warn mt reveal">
+      <span class="ic">⚠️</span>
+      <div>Generate with AI は、プレビュー機能のため環境によっては表示されません。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 12. Exercise overview ===== -->
+<section class="slide" data-section="3 · 追加方法と管理">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">03</span> Exercise Overview</span>
+    <h2 class="reveal">本日の<span class="accent">演習の流れ</span></h2>
+    <p class="lead reveal">各追加方法の説明に続けて、その方法でスキルを作成。作成したスキルは、後半の演習でそのまま使用。</p>
+    <table class="tbl compact mt reveal">
+      <thead><tr><th>Step</th><th>パート</th><th>内容</th><th>時間</th></tr></thead>
+      <tbody>
+        <tr><td class="k">Step 0</td><td class="muted">3 追加方法と管理</td><td>演習用エージェントの作成</td><td class="num">5分</td></tr>
+        <tr><td class="k">Step 1</td><td class="muted">3 追加方法と管理</td><td>business-trip-report を「最初から作成」で作成</td><td class="num">10分</td></tr>
+        <tr><td class="k">Step 2</td><td class="muted">3 追加方法と管理</td><td>expense-policy-check.md をアップロード</td><td class="num">10分</td></tr>
+        <tr><td class="k">Step 3</td><td class="muted">3 追加方法と管理</td><td>zip（規程・テンプレート・原本 PDF を同梱）に置換</td><td class="num">10分</td></tr>
+        <tr class="focus"><td class="k">Step 4</td><td class="muted">5 演習</td><td>作成したスキルの動作確認</td><td class="num">15分</td></tr>
+        <tr class="focus"><td class="k">Step 5</td><td class="muted">5 演習</td><td>振り返り</td><td class="num">5分</td></tr>
+        <tr><td class="k">Step 6</td><td class="muted">7 自分たちでスキルを作成</td><td>自分たちの業務でスキルを設計・作成</td><td class="num">35分</td></tr>
+      </tbody>
+    </table>
+    <p class="sub mt reveal">詳しい手順とコピー用の文面は <code class="inline">handson/README.md</code> に記載。資料一式：<a href="https://github.com/SeiyaTogawa/copilot-studio-agent-skills-workshop" target="_blank" rel="noopener">github.com/SeiyaTogawa/copilot-studio-agent-skills-workshop</a></p>
+  </div>
+</section>
+
+<!-- ===== 13. Materials ===== -->
+<section class="slide" data-section="3 · 追加方法と管理">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">03</span> Materials</span>
+    <h2 class="reveal">配布物と<span class="accent">題材の規程</span></h2>
+    <div class="two img-r reveal">
+      <div class="stack">
+        <div>
+          <div class="code-label">配布物</div>
+<pre class="tree"><span class="b">handson/</span>
+├── README.md                   <span class="cm">… 手順書（コピペ用の文面つき）</span>
+└── dist/
+    ├── <span class="fm">expense-policy-check.md</span>   <span class="cm">… Step 2</span>
+    └── <span class="fm">expense-policy-check.zip</span>  <span class="cm">… Step 3</span>
+          ├── SKILL.md
+          ├── references/expense-policy.md
+          ├── assets/result-template.md
+          └── assets/expense-policy-original.pdf</pre>
+        </div>
+        <div class="callout">
+          <span class="ic">ℹ️</span>
+          <div>規程は <b>ハンズオン用の架空のもの</b>。外部データや接続の使用なし。</div>
+        </div>
+      </div>
+      <table class="tbl compact">
+        <thead><tr><th>条文</th><th>内容（抜粋）</th></tr></thead>
+        <tbody>
+          <tr><td class="k">第2条 申請期限</td><td>発生から30日以内。超過時は遅延理由＋上長承認</td></tr>
+          <tr><td class="k">第3条 領収書の添付</td><td>1件3,000円以上は領収書を添付</td></tr>
+          <tr><td class="k">第5条 タクシー</td><td>乗車が22時〜翌5時などの場合に限定。1回10,000円まで</td></tr>
+          <tr><td class="k">第6条 宿泊費</td><td>東京23区・大阪市・名古屋市は1泊12,000円、それ以外は10,000円</td></tr>
+          <tr><td class="k">第7条 会食費</td><td>1人あたり8,000円まで。参加者全員の氏名・所属と目的を記載</td></tr>
+          <tr><td class="k">第8条 承認</td><td>1回の申請が合計50,000円以上なら部長承認</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 14. Step 0 ===== -->
+<section class="slide" data-section="3 · 追加方法と管理">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">03</span> Step 0</span>
+    <h2 class="reveal">演習用<span class="accent">エージェントの作成</span></h2>
+    <div class="two center reveal">
+      <div class="card accent-edge">
+        <div class="cs-row num"><div class="k"><span class="badge">1</span></div><div class="v">Copilot Studio にサインインし、左下の環境名が指定の環境であることを確認</div></div>
+        <div class="cs-row num"><div class="k"><span class="badge">2</span></div><div class="v">ホームの <b>エージェント [GitHub Copilot]</b> を選択</div></div>
+        <div class="cs-row num"><div class="k"><span class="badge">3</span></div><div class="v">名前に <code class="inline">経費アシスタント（自分の名前）</code> を入力し、指示を貼り付け</div></div>
+        <div class="cs-row num"><div class="k"><span class="badge">4</span></div><div class="v">右パネルの <b>ナレッジ</b> に「すべての Web サイトを検索する」があれば削除</div></div>
+        <div class="cs-row num"><div class="k"><span class="badge">5</span></div><div class="v"><b>保存</b> し、右パネルに <b>スキル</b> 欄が表示されることを確認</div></div>
+      </div>
+      <div class="stack">
+        <div>
+          <div class="code-label">指示（コピー用）</div>
+<pre class="code wrap">あなたは社内の経費精算をサポートするアシスタントです。日本語で丁寧に回答してください。</pre>
+        </div>
+        <div class="callout">
+          <span class="ic">ℹ️</span>
+          <div>スキルの効果を確認しやすくするため、ナレッジの Web 検索を外します。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 15. Create from blank ===== -->
+<section class="slide" data-section="3 · 追加方法と管理">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">03</span> Create from Blank</span>
+    <h2 class="reveal">「最初から作成」は<span class="accent"> 3 項目</span>の入力で作成可能</h2>
+    <div class="two img-l center reveal">
+      <figure class="shot">
+        <img src="img/04-create-from-blank.png" alt="最初から作成のフォーム" />
+        <figcaption>スキル → スキルの追加 → 最初から作成</figcaption>
+      </figure>
+      <div>
+        <div class="cs-row"><div class="k">名前</div><div class="v">英小文字・数字・ハイフンのみ。先頭・末尾のハイフンは不可<br><code class="inline">business-trip-report</code></div></div>
+        <div class="cs-row"><div class="k">説明</div><div class="v"><b>何をするか</b> と <b>どんなときに使うか</b>。呼び出しの判断材料として使用</div></div>
+        <div class="cs-row"><div class="k">指示</div><div class="v">Markdown で手順を書く（= SKILL.md の本文）</div></div>
+        <ul class="clean tight mt">
+          <li>作成後もパネル上で編集可能</li>
+          <li>Markdown ファイルとしてダウンロード可能</li>
+          <li>追加・変更後はエージェントを <b>保存</b></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 16. Step 1 ===== -->
+<section class="slide" data-section="3 · 追加方法と管理">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">03</span> Step 1</span>
+    <h2 class="reveal">business-trip-report を<span class="accent">最初から作成</span></h2>
+    <div class="two reveal">
+      <div class="stack">
+        <div>
+          <div class="code-label">名前</div>
+<pre class="code wrap">business-trip-report</pre>
+        </div>
+        <div>
+          <div class="code-label">説明</div>
+<pre class="code wrap">出張の報告書を作成する。「出張報告を書きたい」「出張のまとめを作って」など、出張後の報告・共有を頼まれたときに使う。</pre>
+        </div>
+        <div>
+          <div class="code-label">テスト用プロンプト（プレビュー）</div>
+<pre class="code wrap">昨日の大阪出張の報告書を作って。訪問先はA社、目的は新サービスの提案。先方は前向きで、来月に再訪問する予定。</pre>
+        </div>
+      </div>
+      <div class="stack">
+        <div>
+          <div class="code-label">指示</div>
+<pre class="code wrap"># 出張報告書の作成
+
+## 手順
+1. 出張先、日程、訪問先、目的、結果、次のアクションを聞き取る。足りない項目は1回だけまとめて質問する。
+2. 次の見出しで報告書を作る：概要 / 訪問先と目的 / 結果 / 次のアクション / 経費メモ
+3. 最後に「経費精算が必要な項目」を箇条書きにする。
+
+## 注意
+- 推測で事実を書かない。不明な点は「（未確認）」と書く。</pre>
+        </div>
+        <p class="sub">回答の上に <code class="inline">Used skill: business-trip-report</code> の表示があれば、スキルの呼び出しに成功。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 17. Upload ===== -->
+<section class="slide" data-section="3 · 追加方法と管理">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">03</span> Upload</span>
+    <h2 class="reveal">アップロードは <span class="accent">.md</span> と <span class="accent">.zip</span> の 2 形式に対応</h2>
+    <div class="two img-l center reveal">
+      <figure class="shot">
+        <img src="img/03-add-skill-upload.png" alt="スキルのアップロード画面" />
+        <figcaption>スキルの追加 → スキルのアップロード</figcaption>
+      </figure>
+      <div class="stack">
+        <div class="cs-row"><div class="k">.md</div><div class="v">SKILL.md 単体で取り込み。手軽に試す場合に使用</div></div>
+        <div class="cs-row"><div class="k">.zip</div><div class="v">フォルダ構成ごと取り込み。<b>参照資料・テンプレート・PDF など</b> も同梱可能</div></div>
+        <div class="card soft">
+          <h3>取り込み時のポイント</h3>
+          <ul class="clean tight">
+            <li>.md はファイル名が SKILL.md でなくても取り込み可能<small>例：expense-policy-check.md</small></li>
+            <li>zip は <b>直下に SKILL.md</b> を配置</li>
+            <li>アップロードしたスキルは画面上で編集不可（読み取り専用）</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 18. Recap: skill format ===== -->
+<section class="slide" data-section="3 · 追加方法と管理">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">03</span> Recap</span>
+    <h2 class="reveal">スキルの<span class="accent">構成</span>（おさらい）</h2>
+    <div class="two reveal">
+      <div>
+        <div class="code-label">フォルダ構成（.zip はこの単位）</div>
+<pre class="tree"><span class="b">expense-policy-check/</span>
+├── <span class="fm">SKILL.md</span>        <span class="cm">← 必須：名前・説明・手順</span>
+├── references/     <span class="cm">← 任意：規程・仕様などの参照資料</span>
+│   └── expense-policy.md
+├── assets/         <span class="cm">← 任意：テンプレート・画像・PDF など</span>
+│   ├── result-template.md
+│   └── expense-policy-original.pdf
+└── scripts/        <span class="cm">← 任意：実行コード（対応は製品次第）</span></pre>
+        <div class="cs-row mt"><div class="k">フロント<br>マター</div><div class="v"><b>いつ使うか</b>。常に読み込まれ、スキル選択の判断材料として使用</div></div>
+        <div class="cs-row"><div class="k">本文</div><div class="v"><b>どう実行するか</b>。スキルの選択時に読み込み</div></div>
+      </div>
+      <div>
+        <div class="code-label">SKILL.md（.md はこの 1 ファイル）</div>
+<pre class="code"><span class="fm">---
+name: expense-policy-check
+description: "経費精算の申請内容が社内の
+  経費精算規程に沿っているかを判定し、
+  OK/要確認/NGと根拠を表で返す。
+  「この経費は精算できる？」などを
+  尋ねられたときは…使う。"
+---</span>
+
+# 経費精算規程チェック
+
+## 手順
+1. 明細を抜き出す
+2. references/expense-policy.md で
+   該当する条文を特定する
+3. OK / 要確認 / NG を判定する
+4. assets/result-template.md の形式で出力
+5. NG・要確認なら assets/ の原本 PDF を添付</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 19. Step 2 ===== -->
+<section class="slide" data-section="3 · 追加方法と管理">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">03</span> Step 2</span>
+    <h2 class="reveal">expense-policy-check.md を<span class="accent">アップロード</span></h2>
+    <p class="lead reveal">SKILL.md 単体でも、スキルの手順が回答に反映されることを確認。</p>
+    <div class="two mt reveal">
+      <div class="card accent-edge">
+        <div class="cs-row num"><div class="k"><span class="badge">1</span></div><div class="v">「スキルの追加」→ <b>スキルのアップロード</b> →<br><code class="inline">dist/expense-policy-check.md</code> を選択</div></div>
+        <div class="cs-row num"><div class="k"><span class="badge">2</span></div><div class="v">スキル一覧に <code class="inline">expense-policy-check</code> が追加されたことを確認<small>アップロード時に自動で保存</small></div></div>
+        <div class="cs-row num"><div class="k"><span class="badge">3</span></div><div class="v"><b>プレビュー</b> →「新しいチャット」→ 右のプロンプトを送信</div></div>
+      </div>
+      <div class="stack">
+        <div>
+          <div class="code-label">プロンプト（Step 2・3 共通）</div>
+<pre class="code wrap">取引先と4人で会食して合計40,000円でした。領収書はあります。参加者の名前は書いていません。経費として申請して大丈夫かチェックして</pre>
+        </div>
+        <div class="card soft">
+          <h3>確認ポイント</h3>
+          <ul class="clean tight">
+            <li><code class="inline">Used skill: expense-policy-check</code> の表示</li>
+            <li>SKILL.md の手順どおり、OK / 要確認 / NG の判定表で回答</li>
+            <li>ファイルがない場合の指示どおり、冒頭に「※社内規程ファイルが同梱されていないため…」の注記</li>
+            <li>末尾に、原本 PDF を添付できない旨と経理部門への確認の案内</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 20. Step 2 result ===== -->
+<section class="slide" data-section="3 · 追加方法と管理">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">03</span> Step 2 · Result</span>
+    <h2 class="reveal">md 単体でも<span class="accent">スキルの手順</span>を反映</h2>
+    <p class="lead reveal">規程ファイルがない場合の指示にも従い、一般的な観点で判定。</p>
+    <div class="grid cols-2 mt reveal">
+      <figure class="shot sm">
+        <img src="img/08-preview-md-trace.png" alt="md 単体のときの推論" />
+        <figcaption><b>Used skill</b> でスキルを読み込み、推論で「only contains SKILL.md」と認識</figcaption>
+      </figure>
+      <figure class="shot sm">
+        <img src="img/08-preview-md.png" alt="md 単体のときの回答" />
+        <figcaption>冒頭に注記、総合判定は <b>⚠️ 要確認</b>。末尾に原本 PDF を添付できない旨</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 21. Zip tree ===== -->
+<section class="slide" data-section="3 · 追加方法と管理">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">03</span> Skill Package</span>
+    <h2 class="reveal">zip を使用すると<span class="accent">同梱ファイルも表示可能</span></h2>
+    <div class="two img-l center reveal">
+      <figure class="shot">
+        <img src="img/09-skill-zip-files.png" alt="zip に置換したスキルの詳細" />
+        <figcaption>スキルの詳細：SKILL.md・assets（原本 PDF・テンプレート）・references をツリー表示</figcaption>
+      </figure>
+      <div class="stack">
+        <div class="card accent-edge">
+          <h3>画面上では編集できないため、原本から再作成</h3>
+          <div class="cs-row num"><div class="k"><span class="badge">1</span></div><div class="v">手元の原本（SKILL.md・references・assets）を編集</div></div>
+          <div class="cs-row num"><div class="k"><span class="badge">2</span></div><div class="v">zip を再作成（SKILL.md は zip の直下に配置）</div></div>
+          <div class="cs-row num"><div class="k"><span class="badge">3</span></div><div class="v">既存のスキルを <b>削除</b> し、zip を <b>アップロード</b><small>zip で追加したスキルには「… → 置換」が表示されないため</small></div></div>
+          <div class="cs-row num"><div class="k"><span class="badge">4</span></div><div class="v">プレビューの <b>新しいチャット</b> で確認</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 22. Step 3 ===== -->
+<section class="slide" data-section="3 · 追加方法と管理">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">03</span> Step 3</span>
+    <h2 class="reveal">zip に置換し、<span class="accent">同じプロンプトを送信</span></h2>
+    <p class="lead reveal">同じスキルに規程・テンプレート・原本 PDF を同梱し、回答の変化を確認。</p>
+    <div class="two mt reveal">
+      <div class="card accent-edge">
+        <div class="cs-row num"><div class="k"><span class="badge">1</span></div><div class="v">スキル一覧の <code class="inline">expense-policy-check</code> を選択し、詳細パネルの <b>… → 置換</b></div></div>
+        <div class="cs-row num"><div class="k"><span class="badge">2</span></div><div class="v"><code class="inline" style="white-space:nowrap">dist/expense-policy-check.zip</code> を選択<small>アップロード時に自動で保存</small></div></div>
+        <div class="cs-row num"><div class="k"><span class="badge">3</span></div><div class="v">スキルの詳細パネルを開き、SKILL.md・assets・references が表示されることを確認</div></div>
+        <div class="cs-row num"><div class="k"><span class="badge">4</span></div><div class="v"><b>プレビュー</b> →「新しいチャット」→ Step 2 と同じプロンプトを送信</div></div>
+      </div>
+      <div class="card soft">
+        <h3>確認ポイント</h3>
+        <ul class="clean tight">
+          <li>判定の根拠に <b>条文番号</b>（例：第7条1項）を付記</li>
+          <li><code class="inline">assets/result-template.md</code> の形式で出力<small>判定表・総合判定・申請者へのコメント案・参照した条文</small></li>
+          <li>総合判定の変化<small>例：⚠️ 要確認 → ❌ NG</small></li>
+          <li>末尾に原本 PDF を添付<small>assets/expense-policy-original.pdf</small></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 23. Step 3 result ===== -->
+<section class="slide" data-section="3 · 追加方法と管理">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">03</span> Step 3 · Result</span>
+    <h2 class="reveal">zip では<span class="accent">同梱ファイルも参照</span>して回答</h2>
+    <p class="lead reveal">references/ の規程と assets/ のテンプレートを参照し、条文番号付きで判定。NG のため assets/ の原本 PDF も添付。</p>
+    <div class="grid cols-2 mt reveal">
+      <figure class="shot sm">
+        <img src="img/10-preview-zip-trace.png" alt="zip のときの推論" />
+        <figcaption>推論で上限8,000円と照合 → 1人あたり10,000円で超過、原本 PDF の添付も判断</figcaption>
+      </figure>
+      <figure class="shot sm">
+        <img src="img/10-preview-zip-result.png" alt="zip のときの回答の後半と原本 PDF" />
+        <figcaption>テンプレートどおりのコメント案・参照した条文。末尾に <b>原本 PDF</b> を添付</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 24. Manage ===== -->
+<section class="slide" data-section="3 · 追加方法と管理">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">03</span> Manage</span>
+    <h2 class="reveal">作成方法による<span class="accent">管理方法の違い</span></h2>
+    <div class="two center reveal" style="grid-template-columns: 1.3fr 1fr">
+      <div class="stack">
+        <table class="tbl compact">
+          <thead><tr><th>操作</th><th>最初から作成</th><th>アップロード</th></tr></thead>
+          <tbody>
+            <tr><td class="k">編集</td><td>パネル上で編集可能</td><td class="muted">不可（読み取り専用）</td></tr>
+            <tr><td class="k">置換</td><td class="muted">—</td><td>… → 置換で .md / .zip を差し替え<small>zip で追加したスキルには表示されないため、削除して再アップロード</small></td></tr>
+            <tr><td class="k">ダウンロード</td><td>ダウンロード アイコン</td><td>… → ダウンロード<small>zip の場合は詳細パネルのダウンロード アイコン</small></td></tr>
+            <tr><td class="k">削除</td><td colspan="2">× アイコン。<b>復元不可</b></td></tr>
+          </tbody>
+        </table>
+        <div class="callout">
+          <span class="ic">📁</span>
+          <div>Learn の説明では、ダウンロードされるのは「スキル名の Markdown ファイル」。<b>原本は Git などで管理</b> し、Copilot Studio 側を正本にしない運用を推奨。</div>
+        </div>
+      </div>
+      <figure class="shot">
+        <img src="img/07-skill-menu.png" alt="md でアップロードしたスキルのメニュー" />
+        <figcaption>md でアップロードしたスキルの「…」メニュー：置換／ダウンロード</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 25. Frontmatter ===== -->
+<section class="slide" data-section="4 · 書き方と注意点">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">04</span> Frontmatter</span>
+    <h2 class="reveal">フロントマターの<span class="accent">ルール</span></h2>
+    <div class="two img-r reveal">
+      <table class="tbl compact">
+        <thead><tr><th>項目</th><th>必須</th><th>ルール</th></tr></thead>
+        <tbody>
+          <tr><td class="k">name</td><td>必須</td><td>1〜64文字。英小文字・数字・ハイフン<small>先頭・末尾・連続のハイフン不可。フォルダ名との一致が必要</small></td></tr>
+          <tr><td class="k">description</td><td>必須</td><td>1,024文字以内<small>何をするか ＋ どんなときに使うか</small></td></tr>
+          <tr><td class="k">license<br>compatibility<br>metadata</td><td class="muted">任意</td><td class="muted">ライセンス、動作環境、任意のキーと値</td></tr>
+          <tr><td class="k">allowed-tools</td><td class="muted">任意</td><td class="muted">使用を許可するツールの指定（実験的）</td></tr>
+        </tbody>
+      </table>
+      <div class="stack">
+        <div>
+          <div class="code-label">SKILL.md の先頭</div>
+<pre class="code"><span class="fm">---</span>
+<span class="fm">name:</span> expense-policy-check
+<span class="fm">description:</span> "…OK/要確認/NGと根拠を
+  表で返す。「規程的に大丈夫？」など…"
+<span class="fm">---</span></pre>
+        </div>
+        <div class="callout warn">
+          <span class="ic">⚠️</span>
+          <div><b>注意点</b><br>・値に <b>コロン（:）</b> を含む場合はダブルクォートが必要<br>・ファイルは <b>UTF-8（BOM なし）</b> で保存</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 26. Description ===== -->
+<section class="slide" data-section="4 · 書き方と注意点">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">04</span> Description</span>
+    <h2 class="reveal">description の書き方で<span class="accent">呼び出されやすさ</span>が変化</h2>
+    <div class="cs-vs reveal">
+      <div class="cs-panel stop">
+        <h3>呼び出されにくい例</h3>
+<pre class="code wrap"><span class="fm">description:</span> 経費チェック</pre>
+        <ul class="clean tight">
+          <li class="no">処理内容と出力が不明確</li>
+          <li class="no">使用する場面の記載なし</li>
+          <li class="no">ユーザーの実際の表現と不一致</li>
+        </ul>
+      </div>
+      <div class="cs-panel go">
+        <h3>呼び出されやすい例</h3>
+<pre class="code wrap"><span class="fm">description:</span> "経費精算の申請内容（交通費・タクシー代・宿泊費・会食費など）が社内の経費精算規程に沿っているかを判定し、OK/要確認/NGと根拠を表で返す。「この経費は精算できる？」「領収書なしでもいい？」など、経費・立替・精算の可否を尋ねられたときは、規程という言葉がなくても使う。"</pre>
+        <ul class="clean tight">
+          <li class="yes"><b>何をするか</b>：判定と、根拠付きの表での回答</li>
+          <li class="yes"><b>いつ使うか</b>：ユーザーが実際に使う表現</li>
+          <li class="yes"><b>範囲</b>：対象の費目を具体的に列挙</li>
+        </ul>
+      </div>
+    </div>
+    <p class="sub mt reveal">description の範囲が広すぎると、無関係な依頼でも呼び出しが発生。呼び出されるべき依頼とそうでない依頼の両方でのテストを推奨。</p>
+  </div>
+</section>
+
+<!-- ===== 27. Body tips ===== -->
+<section class="slide" data-section="4 · 書き方と注意点">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">04</span> Instructions</span>
+    <h2 class="reveal">手順には<span class="accent">情報不足時の動作</span>まで記載</h2>
+    <div class="two reveal">
+      <ul class="clean">
+        <li>手順は番号付きで、1 ステップにつき 1 動作</li>
+        <li>情報不足時の動作を記載<small>推測の禁止、確認の質問は 1 回まで など</small></li>
+        <li>ファイルが見つからない場合の代替動作を記載</li>
+        <li>出力形式はテンプレート（assets/）で固定</li>
+        <li>長い資料は references/ に分割し、読み込むタイミングを記載</li>
+        <li>迷いやすい判断基準は「注意点」として明記</li>
+      </ul>
+      <div class="stack">
+        <div>
+          <div class="code-label">SKILL.md の「注意点」（抜粋）</div>
+<pre class="code">## 注意点
+
+- 会食の上限は **1人あたり** の金額で判定する。
+  合計額 ÷ 参加人数（端数は切り上げ）で計算する。
+- タクシーの時間帯は **乗車時刻** で判定する。
+- 複数の条件に当てはまる場合は、
+  最も厳しい判定を採用する。
+- 規程の解釈に幅がある場合は断定せず、
+  「経理部門への確認を推奨」と書く。</pre>
+        </div>
+        <div class="callout">
+          <span class="ic">💡</span>
+          <div>Step 2 で表示される「※社内規程ファイルが同梱されていないため…」は、<b>ファイルがない場合の指示</b> に従った結果。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 28. Troubleshooting ===== -->
+<section class="slide" data-section="4 · 書き方と注意点">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">04</span> Troubleshooting</span>
+    <h2 class="reveal">うまく動作しない場合の<span class="accent">確認ポイント</span></h2>
+    <table class="tbl compact reveal">
+      <thead><tr><th>症状</th><th>よくある原因</th><th>対処</th></tr></thead>
+      <tbody>
+        <tr><td>YAML エラーで読み込み不可</td><td class="muted">値にコロン（:）を含むがクォートなし</td><td>値を <code class="inline">"…"</code> で囲んで保存</td></tr>
+        <tr><td>必須項目のエラー</td><td class="muted">name または description の欠落</td><td>フロントマターに追加</td></tr>
+        <tr><td>description のエラー</td><td class="muted">1,024文字を超過</td><td>要点に絞り込み</td></tr>
+        <tr><td>名前の重複</td><td class="muted">同じ name のスキルが既に存在</td><td>名前を変更、または既存のスキルを置換<small>zip で追加したスキルは削除して再アップロード</small></td></tr>
+        <tr><td>SKILL.md の読み込み不可</td><td class="muted">UTF-8 以外、または BOM 付き</td><td>UTF-8（BOM なし）で保存</td></tr>
+        <tr><td>同梱ファイルの未反映／パッケージの拒否</td><td class="muted">zip の構成が想定と相違</td><td>SKILL.md が zip 直下にあるかを確認</td></tr>
+        <tr><td>置換後も回答に変化なし</td><td class="muted">前の会話の文脈が残存</td><td>「新しいチャット」で再実行</td></tr>
+      </tbody>
+    </table>
+    <div class="callout mt reveal">
+      <span class="ic">🔍</span>
+      <div>不正なスキルは <b>読み込まれずにスキップ</b> され、エージェントの他の機能は通常どおり動作。追加したスキルが呼び出されない場合は、まずフロントマターを確認。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 29. Break ===== -->
+<section class="slide" data-section="休憩">
+  <div class="slide-inner" style="text-align:center">
+    <span class="kicker reveal">Break</span>
+    <div class="big-word reveal">休憩 10分</div>
+    <p class="lead mt reveal">後半は、作成したスキルを使った演習と、自分たちの業務でのスキル作成。</p>
+  </div>
+</section>
+
+<!-- ===== 30. Exercise overview (part 5) ===== -->
+<section class="slide" data-section="5 · 演習">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">05</span> Exercise</span>
+    <h2 class="reveal">作成した<span class="accent">スキルの動作確認</span></h2>
+    <p class="lead reveal mb">Step 1〜3 で作成した 2 つのスキルを使用し、判定の内容と呼び出しの有無を確認。</p>
+    <div class="grid cols-3 reveal">
+      <div class="step" style="--shade: var(--cp-gen)"><span class="no">Step 4-1</span><span class="ttl">追加のプロンプトで判定を確認</span><span class="q">タクシー・宿泊・申請期限のケースで、判定と条文番号を確認</span><span class="time">10分</span></div>
+      <div class="step" style="--shade: var(--cp-ret)"><span class="no">Step 4-2</span><span class="ttl">スキルの呼び分けを確認</span><span class="q">出張報告の依頼と無関係な依頼で、呼び出されるスキルを確認</span><span class="time">5分</span></div>
+      <div class="step" style="--shade: var(--cp-act)"><span class="no">Step 5</span><span class="ttl">振り返り</span><span class="q">md と zip の違い、呼び出しの判断、規程改定時の対応を整理</span><span class="time">5分</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 31. More prompts ===== -->
+<section class="slide" data-section="5 · 演習">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">05</span> Step 4</span>
+    <h2 class="reveal">追加の<span class="accent">テスト用プロンプト</span></h2>
+    <table class="tbl compact reveal">
+      <thead><tr><th>#</th><th>プロンプト</th><th>期待される結果</th></tr></thead>
+      <tbody>
+        <tr><td class="k">1</td><td>昨日23時に客先から会社までタクシーで8,500円。領収書あり。</td><td>✅ OK<small>22時〜翌5時の乗車（第5条1項）、上限以内（第5条2項）</small></td></tr>
+        <tr><td class="k">2</td><td>大阪出張で1泊14,000円のホテルに泊まりました。</td><td>⚠️ 要確認 または ❌<small>上限12,000円を超過、差額2,000円は自己負担（第6条）</small></td></tr>
+        <tr><td class="k">3</td><td>2か月前の交通費1,200円を申請したい。レシートはなくしました。</td><td>⚠️ 要確認<small>30日超は遅延理由＋上長承認（第2条2項）、出金伝票で代替可（第3条2項）</small></td></tr>
+        <tr><td class="k">4</td><td>先週、福岡のB社を訪問しました。出張報告をまとめたいです。</td><td>business-trip-report を呼び出し<small>Step 1 のスキル。不足している項目をまとめて質問</small></td></tr>
+        <tr><td class="k">5</td><td>会議室の予約方法を教えて</td><td>スキルの呼び出しなし<small>経費・出張報告のいずれとも無関係</small></td></tr>
+      </tbody>
+    </table>
+    <p class="sub mt reveal">生成 AI の回答は毎回多少変動。判定の結論と条文番号が一致していれば問題なし。</p>
+  </div>
+</section>
+
+<!-- ===== 32. md vs zip ===== -->
+<section class="slide" data-section="5 · 演習">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">05</span> md vs zip</span>
+    <h2 class="reveal">どちらもスキルを反映、zip では<span class="accent">同梱ファイルも参照</span></h2>
+    <table class="tbl reveal">
+      <thead><tr><th>観点</th><th>md 単体（Step 2）</th><th>zip（Step 3）</th></tr></thead>
+      <tbody>
+        <tr><td class="k">スキルの手順</td><td>反映（判定表・注記・推測の禁止）</td><td>反映</td></tr>
+        <tr><td class="k">参照できるファイル</td><td class="muted">SKILL.md のみ</td><td>SKILL.md ＋ references/ ＋ assets/</td></tr>
+        <tr><td class="k">判定の根拠</td><td class="muted">一般的な観点（冒頭に注記）</td><td><b>条文番号つき</b>（例：第7条1項・2項、第3条1項）</td></tr>
+        <tr><td class="k">金額の基準</td><td class="muted">具体的な上限額の提示なし</td><td>1人あたり10,000円 &gt; 上限8,000円</td></tr>
+        <tr><td class="k">総合判定</td><td class="muted">⚠️ 要確認</td><td><b>❌ NG</b>（上限超過・参加者の記載なし）</td></tr>
+        <tr><td class="k">出力形式</td><td class="muted">SKILL.md に記述した最小フォーマット</td><td>テンプレートどおり（判定表・総合判定・コメント案・参照した条文）</td></tr>
+        <tr><td class="k">規程の原本 PDF</td><td class="muted">添付できない旨と、経理部門への確認を案内</td><td><b>assets/ の PDF を回答に添付</b></td></tr>
+      </tbody>
+    </table>
+    <div class="callout mt reveal">
+      <span class="ic">💡</span>
+      <div>md 単体でも SKILL.md の手順は反映され、<b>規程にない数値は作らず</b> 一般論である旨を明記。zip では references/・assets/ も参照し、<b>規程に沿った具体的な判定</b> と <b>原本 PDF の添付</b> が可能。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 33. Retrospective ===== -->
+<section class="slide" data-section="5 · 演習">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">05</span> Step 5 · Retrospective</span>
+    <h2 class="reveal"><span class="accent">振り返り</span></h2>
+    <div class="grid cols-3 reveal">
+      <div class="card accent-edge"><h3><span class="badge">Q1</span>回答の変化</h3><p>md 単体と zip での、規程の数値・条文番号・出力形式の違い</p></div>
+      <div class="card accent-edge"><h3><span class="badge">Q2</span>呼び出しの判断</h3><p>スキルを呼び出すかどうかを決めている箇所<br>→ <b>description</b></p></div>
+      <div class="card accent-edge"><h3><span class="badge">Q3</span>規程改定時の対応</h3><p>規程改定時の修正箇所と反映方法<br>→ 原本を修正 → zip を再作成 → <b>削除して再アップロード</b></p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 34. Public skills ===== -->
+<section class="slide" data-section="6 · 公開スキルの活用">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">06</span> Public Skills</span>
+    <h2 class="reveal">公開スキルは<span class="accent">内容を確認し、自社向けに修正</span>して利用</h2>
+    <div class="grid cols-3 reveal">
+      <div class="cs-part" style="--shade: var(--cp-gen)">
+        <span class="en">github.com/anthropics/skills</span>
+        <span class="ttl">Anthropic 公式サンプル</span>
+        <span class="desc">skill-creator、docx / pptx / xlsx / pdf、mcp-builder、webapp-testing など。書き方の参考としても有用。</span>
+        <div class="tags"><span class="tag">多くは Apache 2.0</span><span class="tag warn">文書系は source-available</span></div>
+      </div>
+      <div class="cs-part" style="--shade: var(--cp-ret)">
+        <span class="en">github.com/github/awesome-copilot</span>
+        <span class="ttl">GitHub Copilot のコミュニティ集</span>
+        <span class="desc">skills/ に 400件以上（2026年9月時点）。指示・エージェント・フックなども掲載。</span>
+        <div class="tags"><span class="tag">MIT</span><span class="tag warn">コミュニティ投稿</span></div>
+      </div>
+      <div class="cs-part" style="--shade: var(--cp-act)">
+        <span class="en">agentskills.io</span>
+        <span class="ttl">仕様と対応製品</span>
+        <span class="desc">フロントマターの項目、フォルダ構成、段階的な読み込みなどの仕様。スキル作成時の一次情報。</span>
+        <div class="tags"><span class="tag">仕様</span><span class="tag">対応クライアント一覧</span></div>
+      </div>
+    </div>
+    <div class="callout mt reveal">
+      <span class="ic">💡</span>
+      <div>他製品向けのスキルは、Copilot Studio にないツールやスクリプトを前提としている場合あり。<b>そのまま取り込まず、参考として活用</b> することを推奨。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 35. Checklist ===== -->
+<section class="slide" data-section="6 · 公開スキルの活用">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">06</span> Before You Import</span>
+    <h2 class="reveal">取り込み前の<span class="accent">チェックリスト</span></h2>
+    <div class="callout warn reveal">
+      <span class="ic">🔒</span>
+      <div><b>まず、すべての内容を確認。</b>SKILL.md と同梱ファイルを開き、外部への送信、不審な URL、必要以上の操作の指示がないかを確認。スキルはエージェントの手順そのものであり、確認を省略した場合、社外の第三者が作成した手順で自社のエージェントが動作するリスクあり。</div>
+    </div>
+    <div class="grid cols-3 mt reveal">
+      <div class="card"><h3>ライセンスの確認</h3><p>リポジトリやスキルごとに異なり、同一リポジトリ内で混在する場合もあり。</p></div>
+      <div class="card"><h3>動作前提の確認</h3><p>scripts/ や特定のツールを前提とするスキルは、Copilot Studio でそのまま動作するとは限らない点に注意。</p></div>
+      <div class="card"><h3>自社向けの修正とテスト</h3><p>用語・判断基準・出力形式を自社に合わせ、呼び出しと判定をプレビューで確認してから公開。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 36. Build your own ===== -->
+<section class="slide" data-section="7 · 自分たちでスキルを作成">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">07</span> Step 6 · Build Your Own</span>
+    <h2 class="reveal">自分たちの業務で<span class="accent">スキルを作成</span></h2>
+    <p class="lead reveal mb">毎回同じ手順・形式で回答してほしい業務を 1 つ選び、スキルとして作成。個人またはペアで実施。</p>
+    <div class="grid cols-4 reveal">
+      <div class="step" style="--shade: var(--cp-border-strong)"><span class="no">1</span><span class="ttl">業務の選定</span><span class="q">規程チェック、報告書作成、問い合わせへの一次回答など</span><span class="time">5分</span></div>
+      <div class="step" style="--shade: var(--cp-gen)"><span class="no">2</span><span class="ttl">設計</span><span class="q">設計シートに沿って、description・手順・出力形式・テスト依頼を決定</span><span class="time">10分</span></div>
+      <div class="step" style="--shade: var(--cp-ret)"><span class="no">3</span><span class="ttl">作成・テスト</span><span class="q">「最初から作成」で作成し、呼び出されるべき依頼とそうでない依頼でテスト</span><span class="time">15分</span></div>
+      <div class="step" style="--shade: var(--cp-act)"><span class="no">4</span><span class="ttl">共有</span><span class="q">数名が、作成したスキルとテスト結果を紹介</span><span class="time">5分</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 37. Design sheet ===== -->
+<section class="slide" data-section="7 · 自分たちでスキルを作成">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">07</span> Design Sheet</span>
+    <h2 class="reveal">スキルの<span class="accent">設計シート</span></h2>
+    <div class="two reveal">
+      <table class="tbl compact">
+        <thead><tr><th>項目</th><th>決める内容</th></tr></thead>
+        <tbody>
+          <tr><td class="k">name</td><td>英小文字・数字・ハイフン<small>例：meeting-minutes</small></td></tr>
+          <tr><td class="k">description</td><td>何をするか ＋ どんな依頼で使うか<small>ユーザーが実際に使う表現を記載</small></td></tr>
+          <tr><td class="k">手順</td><td>番号付きで 1 ステップにつき 1 動作<small>情報不足時の動作も記載</small></td></tr>
+          <tr><td class="k">出力形式</td><td>見出し・表など、毎回そろえたい形式</td></tr>
+          <tr><td class="k">テスト依頼</td><td>呼び出されるべき依頼を 1 つ<small>呼び出されるべきでない依頼も 1 つ</small></td></tr>
+        </tbody>
+      </table>
+      <div class="stack">
+        <div>
+          <div class="code-label">description のひな形</div>
+<pre class="code wrap">&lt;何をするか&gt;。「&lt;依頼の例 1&gt;」「&lt;依頼の例 2&gt;」など、&lt;どんなとき&gt;に使う。</pre>
+        </div>
+        <div>
+          <div class="code-label">指示のひな形</div>
+<pre class="code"># &lt;スキルの目的&gt;
+
+## 手順
+1. &lt;確認する項目&gt;を聞き取る。足りない項目は
+   1回だけまとめて質問する。
+2. &lt;処理の内容&gt;
+3. 次の見出しで回答する：&lt;見出し 1&gt; / &lt;見出し 2&gt;
+
+## 注意
+- 推測で事実を書かない。不明な点は
+  「（未確認）」と書く。</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 38. Summary ===== -->
+<section class="slide" data-section="8 · まとめ">
+  <div class="slide-inner">
+    <span class="kicker reveal"><span class="num">08</span> Next Step</span>
+    <h2 class="reveal">自社業務の<span class="accent">スキル化</span>に向けた次のステップ</h2>
+    <p class="lead reveal">スキルの呼び出しは description で、規程に沿った回答は同梱資料で決定。Step 6 で作成したスキルを起点とした、次の 3 ステップ。</p>
+    <div class="card accent-edge mt reveal">
+      <div class="cs-row num"><div class="k"><span class="badge">1</span></div><div class="v"><b>資料の同梱</b>：根拠となる規程・マニュアルを references/ に格納し、zip 化して置換</div></div>
+      <div class="cs-row num"><div class="k"><span class="badge">2</span></div><div class="v"><b>テストと改善</b>：呼び出されるべき依頼とそうでない依頼の両方でテストし、description と手順を調整</div></div>
+      <div class="cs-row num"><div class="k"><span class="badge">3</span></div><div class="v"><b>原本の管理と共有</b>：原本は Git など Copilot Studio の外で管理し、レビューを経て社内に共有</div></div>
+    </div>
+    <div class="callout warn mt reveal">
+      <span class="ic">💳</span>
+      <div>社内での利用には、GitHub Copilot エージェントを作成できる環境と <b>Copilot クレジットの割り当て</b> が必要。環境の準備については管理者へ相談。</div>
+    </div>
+    <div class="reveal" style="text-align:center; margin-top: 1.2rem">
+      <div class="big-word" style="font-size: clamp(2.6rem, 7vw, 5rem)">Q&amp;A</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 39. References ===== -->
+<section class="slide" data-section="参考リンク">
+  <div class="slide-inner">
+    <span class="kicker reveal">References</span>
+    <h2 class="reveal">参考<span class="accent">リンク</span></h2>
+    <table class="tbl compact reveal">
+      <thead><tr><th>内容</th><th>URL</th></tr></thead>
+      <tbody>
+        <tr><td class="k">本日の資料一式</td><td><a href="https://github.com/SeiyaTogawa/copilot-studio-agent-skills-workshop" target="_blank" rel="noopener">github.com/SeiyaTogawa/copilot-studio-agent-skills-workshop</a></td></tr>
+        <tr><td class="k">スキルの概要</td><td><a href="https://learn.microsoft.com/ja-jp/microsoft-copilot-studio/agents-experience/skills-overview" target="_blank" rel="noopener">learn.microsoft.com/ja-jp/microsoft-copilot-studio/agents-experience/skills-overview</a></td></tr>
+        <tr><td class="k">スキルの作成</td><td><a href="https://learn.microsoft.com/ja-jp/microsoft-copilot-studio/agents-experience/skills-create" target="_blank" rel="noopener">learn.microsoft.com/ja-jp/microsoft-copilot-studio/agents-experience/skills-create</a></td></tr>
+        <tr><td class="k">既存のスキルの追加</td><td><a href="https://learn.microsoft.com/ja-jp/microsoft-copilot-studio/agents-experience/skills-add-existing" target="_blank" rel="noopener">learn.microsoft.com/ja-jp/microsoft-copilot-studio/agents-experience/skills-add-existing</a></td></tr>
+        <tr><td class="k">スキルの管理と削除</td><td><a href="https://learn.microsoft.com/ja-jp/microsoft-copilot-studio/agents-experience/skills-manage" target="_blank" rel="noopener">learn.microsoft.com/ja-jp/microsoft-copilot-studio/agents-experience/skills-manage</a></td></tr>
+        <tr><td class="k">GitHub Copilot エージェント</td><td><a href="https://learn.microsoft.com/ja-jp/microsoft-copilot-studio/agents-experience/overview" target="_blank" rel="noopener">learn.microsoft.com/ja-jp/microsoft-copilot-studio/agents-experience/overview</a></td></tr>
+        <tr><td class="k">クレジットの管理</td><td><a href="https://learn.microsoft.com/ja-jp/power-platform/admin/manage-copilot-studio-copilot-credits-capacity" target="_blank" rel="noopener">learn.microsoft.com/ja-jp/power-platform/admin/manage-copilot-studio-copilot-credits-capacity</a></td></tr>
+        <tr><td class="k">Agent Skills 仕様</td><td><a href="https://agentskills.io/specification" target="_blank" rel="noopener">agentskills.io/specification</a></td></tr>
+        <tr><td class="k">公開スキル</td><td><a href="https://github.com/anthropics/skills" target="_blank" rel="noopener">github.com/anthropics/skills</a> ／ <a href="https://github.com/github/awesome-copilot" target="_blank" rel="noopener">github.com/github/awesome-copilot</a></td></tr>
+      </tbody>
+    </table>
+    <p class="sub mt reveal">画面キャプチャは2026年9月時点のもの。UI は変更される場合あり。</p>
+  </div>
+</section>
+
+</div>
+
+<div class="lightbox" id="lightbox" aria-hidden="true"><img alt="" id="lightboxImg" /></div>
+
+<div class="dots" id="dots"></div>
+<div class="hint"><kbd>←</kbd> <kbd>→</kbd> 移動 · <kbd>F</kbd> 全画面 · 画像クリックで拡大</div>
+<div class="hud">
+  <span class="counter"><b id="cur">1</b> / <span id="total">1</span></span>
+  <button class="btn" id="prev" aria-label="前へ">‹</button>
+  <button class="btn" id="next" aria-label="次へ">›</button>
+</div>
+
+<script>
+(() => {
+  const slides = Array.from(document.querySelectorAll(".slide"));
+  const total = slides.length;
+  const startParam = parseInt(new URLSearchParams(window.location.search).get("slide") || "1", 10);
+  let i = Number.isFinite(startParam) ? Math.max(0, Math.min(total - 1, startParam - 1)) : 0;
+
+  const elCur = document.getElementById("cur");
+  const elTotal = document.getElementById("total");
+  const elProgress = document.getElementById("progress");
+  const elSection = document.getElementById("sectionName");
+  const dotsWrap = document.getElementById("dots");
+  const lightbox = document.getElementById("lightbox");
+  const lightboxImg = document.getElementById("lightboxImg");
+  elTotal.textContent = total;
+
+  slides.forEach((s, idx) => {
+    const d = document.createElement("button");
+    d.className = "dot-nav";
+    d.setAttribute("aria-label", "スライド " + (idx + 1));
+    d.addEventListener("click", () => go(idx));
+    dotsWrap.appendChild(d);
+  });
+  const dots = Array.from(dotsWrap.children);
+
+  function render() {
+    slides.forEach((s, idx) => s.classList.toggle("active", idx === i));
+    dots.forEach((d, idx) => d.classList.toggle("on", idx === i));
+    elCur.textContent = i + 1;
+    elProgress.style.width = (total > 1 ? (i / (total - 1)) * 100 : 100) + "%";
+    elSection.textContent = slides[i].dataset.section || "";
+  }
+  function go(n) { i = Math.max(0, Math.min(total - 1, n)); render(); }
+  function next() { go(i + 1); }
+  function prev() { go(i - 1); }
+
+  function openLightbox(src, alt) {
+    lightboxImg.src = src; lightboxImg.alt = alt || "";
+    lightbox.classList.add("open"); lightbox.setAttribute("aria-hidden", "false");
+  }
+  function closeLightbox() {
+    lightbox.classList.remove("open"); lightbox.setAttribute("aria-hidden", "true");
+  }
+  document.querySelectorAll("figure.shot img").forEach((img) => {
+    img.addEventListener("click", () => openLightbox(img.src, img.alt));
+  });
+  lightbox.addEventListener("click", closeLightbox);
+
+  document.getElementById("next").addEventListener("click", next);
+  document.getElementById("prev").addEventListener("click", prev);
+
+  document.addEventListener("keydown", (e) => {
+    if (lightbox.classList.contains("open")) {
+      if (e.key === "Escape" || e.key === " " || e.key === "Enter") { e.preventDefault(); closeLightbox(); }
+      return;
+    }
+    switch (e.key) {
+      case "ArrowRight": case "PageDown": case " ": e.preventDefault(); next(); break;
+      case "ArrowLeft": case "PageUp": case "Backspace": e.preventDefault(); prev(); break;
+      case "Home": go(0); break;
+      case "End": go(total - 1); break;
+      case "f": case "F":
+        if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+        else document.exitFullscreen?.();
+        break;
+    }
+  });
+
+  let tx = null;
+  document.addEventListener("touchstart", (e) => { tx = e.changedTouches[0].clientX; }, { passive: true });
+  document.addEventListener("touchend", (e) => {
+    if (tx === null || lightbox.classList.contains("open")) { tx = null; return; }
+    const dx = e.changedTouches[0].clientX - tx;
+    if (Math.abs(dx) > 50) (dx < 0 ? next : prev)();
+    tx = null;
+  }, { passive: true });
+
+  render();
+})();
+</script>
+</body>
+</html>
